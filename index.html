@@ -462,8 +462,8 @@ const DAYS = [
   {label:'Monday',type:'gym-lower',dot:'#3a7d52',
    summary:['Lower — squat','Limber 11 at lunch','Morning stretch','Evening unwind','2× 10 min walks'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
-     sections:[{lbl:'Stretch sequence',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Thoracic rotation",d:"45s each side"},{n:"Cat-cow",d:"10 reps"},{n:"Downward dog calf stretch",d:"45s each side"},{n:"Shoulder cross-body stretch",d:"30s each side"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
     {time:'Lunch',dc:'#c08840',title:'Limber 11',sub:'~15–20 min · preps hips for squats',type:'mobility',
      sections:[{lbl:'Sequence',items:[{n:"Foam roll — IT band, hip flexor, adductor"},{n:"SMR — glutes, piriformis"},{n:"Hip flexor stretch, hip circle, groin stretch"},{n:"Leg swings, fire hydrant circles, mountain climbers"}]}]},
     {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
@@ -478,8 +478,8 @@ const DAYS = [
   {label:'Tuesday',type:'gym-upper',dot:'#3a6ea8',
    summary:['Upper — overhead press','Limber 11 after lunch','Morning stretch','Evening unwind','2× 10 min walks'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
-     sections:[{lbl:'Stretch sequence',items:[{n:"Doorway chest stretch",d:"60s"},{n:"Overhead tricep stretch",d:"30s each side"},{n:"Neck rolls",d:"5 slow circles each direction"},{n:"Thoracic extension over foam roller",d:"60s"},{n:"Wrist flexor / extensor stretch",d:"30s each side"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
     {time:'Post-lunch',dc:'#c08840',title:'Walk + Limber 11',sub:'10 min walk · then ~15 min Limber 11',type:'mobility',
      sections:[{lbl:'Focus today',items:[{n:"Less critical on upper days"},{n:"Prioritise thoracic and shoulder sections"}]}]},
     {time:'Afternoon',dc:'#e8e6e1',title:'Gym — Upper (Press)',sub:'60–75 min',type:'workout',
@@ -491,10 +491,12 @@ const DAYS = [
      sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
    ]},
   {label:'Wednesday',type:'cardio',dot:'#c08840',
-   summary:['Rowing — steady state','Limber 11 in the morning','Morning stretch','Evening unwind','2× 10 min walks'],
+   summary:['Rowing — steady state','Morning stretch','Limber 11','Evening unwind','2× 10 min walks'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch + Limber 11',sub:'~25–30 min · more time today',type:'stretch',
-     sections:[{lbl:'Morning stretch first · 10–15 min',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Cat-cow",d:"10 reps"},{n:"Thoracic rotation",d:"45s each side"},{n:"Downward dog",d:"60s"},{n:"Shoulder cross-body stretch",d:"30s each side"}]},{lbl:'Then Limber 11 · ~15 min',items:[{n:"Full sequence — no rush today"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
+    {time:'Morning',dc:'#c08840',title:'Limber 11',sub:'~15 min · do after morning stretch, no rush today',type:'mobility',
+     sections:[{lbl:'Sequence',items:[{n:"Foam roll — IT band, hip flexor, adductor"},{n:"SMR — glutes, piriformis"},{n:"Hip flexor stretch, hip circle, groin stretch"},{n:"Leg swings, fire hydrant circles, mountain climbers"}]}]},
     {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min',type:'walk',sections:[]},
     {time:'Afternoon',dc:'#c08840',title:'Rowing — steady state',sub:'20–30 min on the rowing machine',type:'cardio',
      sections:[{lbl:'Session notes',items:[{n:"Keep pace conversational — full sentences throughout"},{n:"No intervals for first 4–6 weeks"},{n:"After 2–3 cycles: optionally swap for 8×250m intervals"}]}]},
@@ -505,8 +507,8 @@ const DAYS = [
   {label:'Thursday',type:'gym-lower',dot:'#3a7d52',
    summary:['Lower — deadlift','Limber 11 mid-morning','Morning stretch','Evening unwind','2× 10 min walks'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
-     sections:[{lbl:'Stretch sequence',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Glute bridge with hold",d:"2×10 reps"},{n:"Cat-cow",d:"10 reps"},{n:"Seated piriformis stretch",d:"45s each side"},{n:"Downward dog calf stretch",d:"45s each side"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
     {time:'Mid-morning',dc:'#c08840',title:'Limber 11',sub:'~15–20 min · 2–3hrs before lifting is ideal',type:'mobility',
      sections:[{lbl:'Focus today',items:[{n:"Most important day — hip flexor and posterior chain prep"},{n:"Full sequence — prioritise hip and glute sections"}]}]},
     {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min',type:'walk',sections:[]},
@@ -521,8 +523,8 @@ const DAYS = [
   {label:'Friday',type:'gym-upper',dot:'#3a6ea8',
    summary:['Upper — bench press','Limber 11 at lunch','Morning stretch','Evening unwind','2× 10 min walks'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
-     sections:[{lbl:'Stretch sequence',items:[{n:"Doorway chest stretch",d:"60s"},{n:"Thread-the-needle",d:"45s each side"},{n:"Shoulder CARs",d:"10 slow circles each arm"},{n:"Neck side stretch",d:"30s each side"},{n:"Thoracic rotation seated",d:"45s each side"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
     {time:'Lunch',dc:'#c08840',title:'Limber 11',sub:'~15–20 min · breaks up afternoon sitting',type:'mobility',
      sections:[{lbl:'Focus today',items:[{n:"Upper body focus — thoracic, shoulder, lat sections"}]}]},
     {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min',type:'walk',sections:[]},
@@ -535,10 +537,12 @@ const DAYS = [
      sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
    ]},
   {label:'Saturday',type:'cardio',dot:'#c08840',
-   summary:['Jump rope · 15–20 min','Morning stretch + Limber 11','Evening unwind','Optional longer walk'],
+   summary:['Jump rope · 15–20 min','Morning stretch','Limber 11','Evening unwind','Optional longer walk'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch + Limber 11',sub:'~25–30 min · weekend pace',type:'stretch',
-     sections:[{lbl:'Morning stretch first · 10–15 min',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Thoracic rotation",d:"45s each side"},{n:"Cat-cow",d:"10 reps"},{n:"Shoulder CARs",d:"10 slow circles"},{n:"Downward dog",d:"60s"}]},{lbl:'Then Limber 11 · ~15 min',items:[{n:"Full sequence"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
+    {time:'Morning',dc:'#c08840',title:'Limber 11',sub:'~15 min · do after morning stretch',type:'mobility',
+     sections:[{lbl:'Sequence',items:[{n:"Foam roll — IT band, hip flexor, adductor"},{n:"SMR — glutes, piriformis"},{n:"Hip flexor stretch, hip circle, groin stretch"},{n:"Leg swings, fire hydrant circles, mountain climbers"}]}]},
     {time:'Mid-morning',dc:'#c08840',title:'Jump rope',sub:'15–20 min',type:'cardio',
      sections:[{lbl:'Session options',items:[{n:"Interval: 30s on / 30s off × 15–20 rounds"},{n:"Continuous: steady pace for 15–20 min"},{n:"Far enough from Friday — no recovery concern"}]}]},
     {time:'Afternoon',dc:'#3a7d52',title:'Optional longer walk',sub:'Good day for extra steps',type:'walk',sections:[]},
@@ -546,10 +550,12 @@ const DAYS = [
      sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
    ]},
   {label:'Sunday',type:'rest',dot:'#55534e',
-   summary:['Active recovery','Walking 30–60 min','Limber 11 whenever','Morning stretch','Evening unwind'],
+   summary:['Active recovery','Walking 30–60 min','Morning stretch','Limber 11','Evening unwind'],
    timeline:[
-    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch + Limber 11',sub:'~25–30 min · most flexible day',type:'stretch',
-     sections:[{lbl:'Morning stretch first · 10–15 min',items:[{n:"Full body — no specific focus today"},{n:"Take your time through each stretch"}]},{lbl:'Then Limber 11 · ~15 min',items:[{n:"Full sequence — slowest pace of the week"},{n:"Good day to spend extra time on tight spots"}]}]},
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10 min on waking · same sequence every day',type:'stretch',
+     sections:[{lbl:'Stretch sequence — floor to standing',items:[{n:"Cat-cow",d:"10 slow reps"},{n:"Child's pose",d:"45s"},{n:"Thoracic rotation (thread the needle)",d:"45s each side"},{n:"Kneeling hip flexor stretch",d:"45s each side"},{n:"90/90 hip stretch",d:"45s each side"},{n:"Downward dog",d:"45s · pedal heels 5×"},{n:"World's greatest stretch",d:"3 reps each side"},{n:"Standing chest opener (hands clasped behind back)",d:"30s"}]}]},
+    {time:'Morning',dc:'#c08840',title:'Limber 11',sub:'~15 min · slowest pace of the week, take your time',type:'mobility',
+     sections:[{lbl:'Sequence',items:[{n:"Foam roll — IT band, hip flexor, adductor"},{n:"SMR — glutes, piriformis"},{n:"Hip flexor stretch, hip circle, groin stretch"},{n:"Leg swings, fire hydrant circles, mountain climbers"}]}]},
     {time:'Anytime',dc:'#3a7d52',title:'Walking',sub:'30–60 min · fully unstructured',type:'walk',
      sections:[{lbl:'Notes',items:[{n:"Errands, a park, anywhere on your feet"},{n:"Think of this as resetting for the week — not training"},{n:"No pace or step target — just move"}]}]},
     {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
@@ -866,7 +872,8 @@ function setView(v){
 function setDay(i){
   CD=i;
   buildNav();
-  if(VIEW==='day') renderTimeline();
+  setView('day'); // always switch to day view when a day is selected
+  renderTimeline();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
