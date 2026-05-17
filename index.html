@@ -417,9 +417,18 @@ async function signOut() {
 
 // Check session on load and listen for auth changes
 (async () => {
-  const { data: { session } } = await _sb.auth.getSession();
-  if (session?.user) { showApp(session.user); }
-  else               { showAuth(); }
+  // Handle OAuth redirect — Supabase exchanges the URL token into a session
+  const { data: { session: redirectSession } } = await _sb.auth.exchangeCodeForSession(window.location.search).catch(() => ({ data: { session: null } }));
+
+  if (redirectSession?.user) {
+    // Clean the URL so the code/token don't sit in the address bar
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showApp(redirectSession.user);
+  } else {
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session?.user) { showApp(session.user); }
+    else               { showAuth(); }
+  }
 
   _sb.auth.onAuthStateChange((_event, session) => {
     if (session?.user) { showApp(session.user); }
