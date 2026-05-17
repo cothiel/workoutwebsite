@@ -417,20 +417,28 @@ async function signOut() {
 
 // Check session on load and listen for auth changes
 (async () => {
-  // Handle OAuth redirect — Supabase exchanges the URL token into a session
-  const { data: { session: redirectSession } } = await _sb.auth.exchangeCodeForSession(window.location.search).catch(() => ({ data: { session: null } }));
+  // Parse tokens from URL hash (implicit flow: #access_token=...&refresh_token=...)
+  const hash = window.location.hash.replace(/^#+/, ''); // strip one or more leading #
+  const params = new URLSearchParams(hash);
+  const accessToken  = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
 
-  if (redirectSession?.user) {
-    // Clean the URL so the code/token don't sit in the address bar
+  if (accessToken && refreshToken) {
+    // Set the session from the URL tokens
+    const { data, error } = await _sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    // Clean the ugly token URL immediately
     window.history.replaceState({}, document.title, window.location.pathname);
-    showApp(redirectSession.user);
+    if (data?.session?.user) { showApp(data.session.user); }
+    else { console.error('setSession error:', error); showAuth(); }
   } else {
+    // Normal load — check for existing session
     const { data: { session } } = await _sb.auth.getSession();
     if (session?.user) { showApp(session.user); }
     else               { showAuth(); }
   }
 
-  _sb.auth.onAuthStateChange((_event, session) => {
+  _sb.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event, session);
     if (session?.user) { showApp(session.user); }
     else               { showAuth(); }
   });
