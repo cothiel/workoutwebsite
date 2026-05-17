@@ -234,6 +234,27 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monosp
 .modal-btn.danger:hover { background: rgba(192,136,64,0.28); }
 
 .page-footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 0.58rem; color: var(--text-3); letter-spacing: 0.05em; }
+
+/* Day date line */
+.day-date-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.day-date { font-size: 0.78rem; color: var(--text-2); font-family: 'DM Mono', monospace; }
+.day-week-tag { font-size: 0.6rem; color: var(--text-3); padding: 1px 7px; border-radius: 99px; background: var(--surface2); border: 1px solid var(--border); }
+
+/* Sidebar day button date */
+.day-btn-label { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.day-btn-date { font-size: 0.55rem; color: var(--text-3); }
+.day-btn.active .day-btn-date { color: rgba(232,230,225,0.5); }
+
+/* Calendar clear button */
+.cal-cell-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.cal-clear-btn { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface3); color: var(--text-3); font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; opacity: 0; transition: opacity 0.15s, background 0.15s; flex-shrink: 0; }
+.cal-cell:hover .cal-clear-btn { opacity: 1; }
+.cal-clear-btn:hover { background: rgba(192,136,64,0.3); color: var(--amber-text); border-color: var(--amber); }
+
+/* Calendar week label on in-cycle days */
+.cal-week-label { font-size: 0.52rem; color: var(--text-3); margin-bottom: 2px; letter-spacing: 0.06em; }
+.cal-cell.in-cycle { border-color: rgba(58,125,82,0.2); }
+.cal-cell.in-cycle .cal-date { color: var(--green-text); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Auth */
@@ -381,6 +402,16 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monosp
   </div>
 </div>
 
+<div class="modal-overlay" id="clearDayModal">
+  <div class="modal">
+    <h3>Clear day?</h3>
+    <p>This removes all completion checks for <strong id="clearDayLabel"></strong>. The day will appear empty on the calendar. This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeClearDay()">Cancel</button>
+      <button class="modal-btn danger" onclick="confirmClearDay()">Clear day</button>
+    </div>
+  </div>
+</div>
 <script>
 // ── Supabase Auth ─────────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://mwhjzhusslllhlkokcwj.supabase.co';
@@ -448,8 +479,6 @@ async function signOut() {
 const r5 = v => Math.round(v/5)*5;
 const getTM = id => r5(+(document.getElementById('rm-'+id)?.value||0)*0.9);
 const lbs = (id,p) => { const v=r5(getTM(id)*p); return v>0?v+' lb':'—'; };
-const dateStr = d => d.toISOString().slice(0,10);
-const todayStr = () => dateStr(new Date());
 
 const WEEKS = [
   {lbl:'Wk 1', sets:[{r:'5',p:.65},{r:'5',p:.75},{r:'5+',p:.85,amrap:true}], fsl:{r:'3×5',p:.65}},
@@ -566,66 +595,102 @@ const DAYS = [
 // State
 let CW = 0, CD = 0, VIEW = 'day';
 let CAL_Y = new Date().getFullYear(), CAL_M = new Date().getMonth();
-let CYCLE_NUM = 0; // increments on each reset
+let CYCLE_NUM = 0;
+let CYCLE_START = null; // ISO date string — the Monday of week 1, day 0
 
 // Storage
 function gs(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;}}
 function ss(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
-// Completion keys scoped to cycle+week so each week has independent state
+
+// Completion keys scoped to cycle+week
 const tKey=(dk,di,bi)=>`t_c${CYCLE_NUM}_w${CW}_${dk}_${di}_${bi}`;
 const sKey=(dk,di,bi,si)=>`s_c${CYCLE_NUM}_w${CW}_${dk}_${di}_${bi}_${si}`;
 const aKey=(dk,di,bi,ai,sn)=>`a_c${CYCLE_NUM}_w${CW}_${dk}_${di}_${bi}_${ai}_${sn}`;
-// Permanent calendar history — never cleared, survives resets and week changes
 const calKey=(dk,di)=>`cal_${dk}_${di}`;
 
-function dayIdxForDate(date){
-  const js=date.getDay();
-  return (js+6)%7; // Mon=0...Sun=6
-}
-function dateForDayIdx(di){
-  const today=new Date();
-  const targetJs=(di+1)%7;
-  let diff=targetJs-today.getDay();
-  if(diff>0) diff-=7;
-  const d=new Date(today);
-  d.setDate(today.getDate()+diff);
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function dateStr(d){ return d.toISOString().slice(0,10); }
+function addDays(base, n){
+  const d = new Date(base + 'T00:00:00');
+  d.setDate(d.getDate() + n);
   return dateStr(d);
 }
 
-// Write current task state into the permanent calendar store whenever a task is toggled
-function syncCalStore(dk,di){
-  const tl=DAYS[di].timeline;
-  const total=tl.length;
-  let done=0;
-  tl.forEach((_,bi)=>{if(gs(tKey(dk,di,bi),false))done++;});
-  ss(calKey(dk,di),{done,total,type:DAYS[di].type});
+// Each of the 4 weeks has 7 days (di 0=Mon … 6=Sun).
+// Absolute date = CYCLE_START + weekIndex*7 + di
+function dateForWD(wi, di){ return addDays(CYCLE_START, wi * 7 + di); }
+// Current displayed day's absolute date
+function currentDateStr(){ return dateForWD(CW, CD); }
+
+// Reverse: given an ISO date string, return {wi, di} or null if outside 4-week cycle
+function wdForDate(dk){
+  const base = new Date(CYCLE_START + 'T00:00:00');
+  const target = new Date(dk + 'T00:00:00');
+  const diff = Math.round((target - base) / 86400000);
+  if(diff < 0 || diff >= 28) return null;
+  return { wi: Math.floor(diff / 7), di: diff % 7 };
 }
 
-function getDayProg(dk,di){
-  const tl=DAYS[di].timeline;
-  let total=tl.length,done=0;
-  tl.forEach((_,bi)=>{if(gs(tKey(dk,di,bi),false))done++;});
-  return {total,done};
+function dayIdxForDate(date){
+  const js = date.getDay();
+  return (js + 6) % 7; // Mon=0…Sun=6
 }
-// Calendar always reads from permanent store so it persists across resets and week switches
-function getCalDayProg(dk,di){
-  return gs(calKey(dk,di),{done:0,total:DAYS[di].timeline.length,type:DAYS[di].type});
+
+// Format date nicely: "Mon, May 17"
+function fmtDate(dk){
+  const d = new Date(dk + 'T00:00:00');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 }
-function isDayDone(dk,di){const{total,done}=getDayProg(dk,di);return total>0&&done===total;}
 
-// Accessory weight/rep storage keys
-const awKey=(di,bi,ai)=>`aw_${di}_${bi}_${ai}`;  // weight for accessory
-const arKey=(di,bi,ai)=>`ar_${di}_${bi}_${ai}`;  // reps for accessory
+// ── Cycle start init ──────────────────────────────────────────────────────────
+// On first ever load, set cycle start to today (treating today as the Monday of wk1).
+// After reset, set to the day after reset date.
+function initCycleStart(){
+  const saved = gs('CYCLE_START', null);
+  if(saved){ CYCLE_START = saved; return; }
+  // No saved start — use today as day 0 of wk1 di=0 ... but map it correctly:
+  // We want today to appear as its actual day of week inside the current week.
+  // So back-calculate: find the Monday of the current week as CYCLE_START.
+  const today = new Date();
+  const dow = (today.getDay() + 6) % 7; // Mon=0
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow);
+  CYCLE_START = dateStr(monday);
+  ss('CYCLE_START', CYCLE_START);
+}
 
+// ── Progress helpers ──────────────────────────────────────────────────────────
+function syncCalStore(dk, di){
+  const tl = DAYS[di].timeline;
+  let done = 0;
+  tl.forEach((_,bi)=>{ if(gs(tKey(dk,di,bi),false)) done++; });
+  ss(calKey(dk,di), {done, total:tl.length, type:DAYS[di].type});
+}
+
+function getDayProg(dk, di){
+  const tl = DAYS[di].timeline;
+  let done = 0;
+  tl.forEach((_,bi)=>{ if(gs(tKey(dk,di,bi),false)) done++; });
+  return {total: tl.length, done};
+}
+function getCalDayProg(dk, di){
+  return gs(calKey(dk,di), {done:0, total:DAYS[di].timeline.length, type:DAYS[di].type});
+}
+function isDayDone(dk, di){ const {total,done}=getDayProg(dk,di); return total>0&&done===total; }
+
+// ── Accessory keys ────────────────────────────────────────────────────────────
+const awKey=(di,bi,ai)=>`aw_${di}_${bi}_${ai}`;
+const arKey=(di,bi,ai)=>`ar_${di}_${bi}_${ai}`;
 function saveAccWeight(di,bi,ai,val){ss(awKey(di,bi,ai),val);}
 function saveAccReps(di,bi,ai,val){ss(arKey(di,bi,ai),val);}
 
-// Render helpers
+// ── Render helpers ────────────────────────────────────────────────────────────
 function renderWorkout(block,di,bi,dk){
   const w=WEEKS[CW], isD=CW===3, key=block.liftKey;
   const mobH=block.mob.map(m=>`<div class="mob-item">${m}</div>`).join('');
 
-  // Main sets (3 working sets)
   const mainSetsH=w.sets.map((s,si)=>{
     const ck=gs(sKey(dk,di,bi,si),false);
     const rc=s.amrap&&!isD?'set-reps amrap':'set-reps';
@@ -640,7 +705,6 @@ function renderWorkout(block,di,bi,dk){
     </div>`;
   }).join('');
 
-  // FSL — 3 individual sets of 5 at first-set percentage
   const fslH=w.fsl?Array.from({length:3},(_,fi)=>{
     const si=w.sets.length+fi;
     const ck=gs(sKey(dk,di,bi,si),false);
@@ -698,21 +762,24 @@ function renderSimple(block){
 }
 
 function renderTimeline(){
-  const day=DAYS[CD], dk=dateForDayIdx(CD);
-  const isGym=day.type==='gym-lower'||day.type==='gym-upper';
-  document.getElementById('tmPanel').style.display=isGym?'block':'none';
+  const day = DAYS[CD];
+  const dk  = currentDateStr();
+  const isGym = day.type==='gym-lower'||day.type==='gym-upper';
+  document.getElementById('tmPanel').style.display = isGym ? 'block' : 'none';
   updateTMs();
 
   const BC={'gym-lower':'badge-gym-lower','gym-upper':'badge-gym-upper','cardio':'badge-cardio','rest':'badge-rest'}[day.type]||'badge-rest';
   const BL={'gym-lower':'strength · lower','gym-upper':'strength · upper','cardio':'cardio','rest':'active recovery'}[day.type]||'rest';
   const {total,done}=getDayProg(dk,CD);
   const pct=total>0?Math.round(done/total*100):0;
+  const weekLabel = ['Week 1','Week 2','Week 3','Deload'][CW] || '';
 
   document.getElementById('dayHeader').innerHTML=`
     <div class="day-header-top">
       <span class="day-name">${day.label}</span>
       <span class="day-type-badge ${BC}">${BL}</span>
     </div>
+    <div class="day-date-line"><span class="day-date">${fmtDate(dk)}</span><span class="day-week-tag">${weekLabel}</span></div>
     <div class="day-prog-bar"><div class="day-prog-fill" style="width:${pct}%"></div></div>
     <div class="day-prog-label">${done} of ${total} tasks complete${pct===100?' · day complete ✓':''}</div>
     <div class="sum-pills">${day.summary.map(s=>`<span class="sum-pill">${s}</span>`).join('')}</div>`;
@@ -746,7 +813,7 @@ function togTask(e,dk,di,bi){
   e.stopPropagation();
   const k=tKey(dk,di,bi);
   ss(k,!gs(k,false));
-  syncCalStore(dk,di); // persist to permanent calendar history
+  syncCalStore(dk,di);
   renderTimeline(); buildNav();
   if(VIEW==='calendar') renderCal();
 }
@@ -776,40 +843,68 @@ function onRMChange(){
 
 function buildNav(){
   document.getElementById('dayNav').innerHTML=DAYS.map((d,i)=>{
-    const dk=dateForDayIdx(i);
-    const done=isDayDone(dk,i);
+    const dk = dateForWD(CW, i);
+    const done = isDayDone(dk, i);
     const tl={'gym-lower':'lower','gym-upper':'upper','cardio':'cardio','rest':'rest'}[d.type]||'rest';
+    const shortDate = (() => { const dt=new Date(dk+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; })();
     return `<button class="day-btn${i===CD?' active':''}${done?' day-done':''}" onclick="setDay(${i})">
-      <span class="day-dot" style="background:${d.dot}"></span>${d.label}
+      <span class="day-dot" style="background:${d.dot}"></span>
+      <span class="day-btn-label">${d.label}<span class="day-btn-date">${shortDate}</span></span>
       <span class="day-type-tag">${tl}</span>
       <span class="day-check">✓</span>
     </button>`;
   }).join('');
 }
 
-// Calendar
+// ── Calendar ──────────────────────────────────────────────────────────────────
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DLBLS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// Clear-day modal state
+let clearDayTarget = null; // {dk, di}
+
+function openClearDay(e, dk, di){
+  e.stopPropagation();
+  clearDayTarget = {dk, di};
+  const d = new Date(dk+'T00:00:00');
+  document.getElementById('clearDayLabel').textContent = `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  document.getElementById('clearDayModal').classList.add('open');
+}
+function closeClearDay(){ document.getElementById('clearDayModal').classList.remove('open'); clearDayTarget=null; }
+function confirmClearDay(){
+  if(!clearDayTarget) return;
+  const {dk, di} = clearDayTarget;
+  // Remove all t_, s_, a_ keys for this date across all cycles/weeks
+  const rem=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && k.includes(`_${dk}_${di}_`)) rem.push(k);
+  }
+  rem.forEach(k=>localStorage.removeItem(k));
+  // Clear the permanent cal store for this date
+  localStorage.removeItem(calKey(dk,di));
+  closeClearDay();
+  renderCal();
+  buildNav();
+  // If we're viewing this day, re-render it too
+  if(VIEW==='day' && currentDateStr()===dk) renderTimeline();
+}
 
 function renderCal(){
   document.getElementById('calTitle').textContent=MONTHS[CAL_M]+' '+CAL_Y;
 
-  // Stats — scan last 60 days using permanent cal store
+  // Stats
   let gymD=0,cardioD=0,completeD=0;
   const now=new Date();
   for(let back=0;back<60;back++){
-    const d=new Date(now);
-    d.setDate(d.getDate()-back);
-    const dk=dateStr(d);
-    const di=dayIdxForDate(d);
+    const d=new Date(now); d.setDate(d.getDate()-back);
+    const dk=dateStr(d), di=dayIdxForDate(d);
     const {done,total,type}=getCalDayProg(dk,di);
-    if(total>0&&done===total){
-      completeD++;
+    if(total>0&&done===total){ completeD++;
       if(type==='gym-lower'||type==='gym-upper') gymD++;
       if(type==='cardio') cardioD++;
     }
   }
-
   document.getElementById('statsRow').innerHTML=`
     <div class="stat-card"><div class="stat-lbl">Cycles completed</div><div class="stat-val">${CYCLE_NUM}</div><div class="stat-sub">all time</div></div>
     <div class="stat-card"><div class="stat-lbl">Days completed</div><div class="stat-val">${completeD}</div><div class="stat-sub">last 60 days</div></div>
@@ -825,18 +920,20 @@ function renderCal(){
   let cn=1, html=DLBLS.map(l=>`<div class="cal-day-lbl">${l}</div>`).join('');
 
   for(let i=0;i<cells;i++){
-    let date,isOther=false;
-    if(i<startDow){date=new Date(CAL_Y,CAL_M-1,dip-startDow+i+1);isOther=true;}
-    else if(cn>dim){date=new Date(CAL_Y,CAL_M+1,cn-dim);isOther=true;cn++;}
-    else{date=new Date(CAL_Y,CAL_M,cn);cn++;}
+    let date, isOther=false;
+    if(i<startDow){ date=new Date(CAL_Y,CAL_M-1,dip-startDow+i+1); isOther=true; }
+    else if(cn>dim){ date=new Date(CAL_Y,CAL_M+1,cn-dim); isOther=true; cn++; }
+    else { date=new Date(CAL_Y,CAL_M,cn); cn++; }
 
     const dk=dateStr(date);
     const isToday=dk===dateStr(today);
     const di=dayIdxForDate(date);
-    // Use permanent store for calendar display
     const {done,total,type:dtype}=getCalDayProg(dk,di);
     const complete=total>0&&done===total;
     const hasAny=done>0;
+    // Check if date falls within current cycle
+    const wd=wdForDate(dk);
+    const inCycle=wd!==null;
 
     let dotC='';
     if(hasAny&&!isOther){
@@ -845,10 +942,22 @@ function renderCal(){
       else dotC='var(--blue)';
     }
     const dotsH=hasAny&&!isOther?`<div class="cal-dots"><div class="cal-dot" style="background:${dotC}"></div>${done>1?`<div class="cal-dot" style="background:var(--purple)"></div>`:''}</div>`:'';
-    const onclick=!isOther?`onclick="jumpToDay(${di})"`:''
 
-    html+=`<div class="cal-cell${isOther?' other-month':''}${isToday?' today':''}${hasAny&&!isOther?' has-data':''}${complete&&!isOther?' day-complete':''}" ${onclick}>
-      <div class="cal-date">${date.getDate()}</div>
+    // Click navigates to day if in cycle, else just opens clear option if has data
+    const clickHandler = !isOther
+      ? (inCycle ? `onclick="jumpToDate('${dk}')"` : (hasAny ? `onclick="openClearDay(event,'${dk}',${di})"` : ''))
+      : '';
+
+    const clearBtn = !isOther && hasAny
+      ? `<button class="cal-clear-btn" onclick="openClearDay(event,'${dk}',${di})" title="Clear day">×</button>`
+      : '';
+
+    html+=`<div class="cal-cell${isOther?' other-month':''}${isToday?' today':''}${hasAny&&!isOther?' has-data':''}${complete&&!isOther?' day-complete':''}${inCycle&&!isOther?' in-cycle':''}" ${clickHandler}>
+      <div class="cal-cell-top">
+        <div class="cal-date">${date.getDate()}</div>
+        ${clearBtn}
+      </div>
+      ${inCycle&&!isOther?`<div class="cal-week-label">${['W1','W2','W3','DL'][wd.wi]||''}</div>`:''}
       ${dotsH}
       ${!isOther?'<div class="cal-bar"></div>':''}
     </div>`;
@@ -858,7 +967,18 @@ function renderCal(){
 
 function calPrev(){CAL_M--;if(CAL_M<0){CAL_M=11;CAL_Y--;}renderCal();}
 function calNext(){CAL_M++;if(CAL_M>11){CAL_M=0;CAL_Y++;}renderCal();}
-function jumpToDay(di){setView('day');setDay(di);}
+
+// Navigate from calendar to the correct week+day
+function jumpToDate(dk){
+  const wd=wdForDate(dk);
+  if(!wd) return;
+  // Set week first (before setDay since setDay calls setView which calls renderTimeline)
+  CW=wd.wi;
+  ss('CW',CW);
+  document.querySelectorAll('.week-btn').forEach((b,j)=>b.classList.toggle('active',j===CW));
+  document.getElementById('deloadBanner').style.display=CW===3?'block':'none';
+  setDay(wd.di);
+}
 
 function setView(v){
   VIEW=v;
@@ -872,7 +992,7 @@ function setView(v){
 function setDay(i){
   CD=i;
   buildNav();
-  setView('day'); // always switch to day view when a day is selected
+  setView('day');
   renderTimeline();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -883,39 +1003,45 @@ function setWeek(i){
   document.querySelectorAll('.week-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
   document.getElementById('deloadBanner').style.display=i===3?'block':'none';
   if(VIEW==='day') renderTimeline();
+  buildNav();
 }
 
 function confirmReset(){document.getElementById('resetModal').classList.add('open');}
 function closeModal(){document.getElementById('resetModal').classList.remove('open');}
 function doReset(){
-  // Optionally increment 1RMs
   if(document.getElementById('rmIncCheck').checked){
     const bumps={sq:10,dl:10,bp:5,ohp:5};
     ['sq','dl','bp','ohp'].forEach(id=>{
       const el=document.getElementById('rm-'+id);
       if(el){
         const newVal=Math.round((parseFloat(el.value)||0)+bumps[id]);
-        el.value=newVal;
-        ss('rm-'+id,String(newVal));
+        el.value=newVal; ss('rm-'+id,String(newVal));
       }
     });
     document.getElementById('rmIncCheck').checked=false;
   }
-  // Increment cycle counter and save
   CYCLE_NUM++;
   ss('CYCLE_NUM',CYCLE_NUM);
-  // Clear only completion data (t_, s_, a_) — cal_ history is preserved
+  // New cycle starts the day after today
+  const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  CYCLE_START=dateStr(tomorrow);
+  ss('CYCLE_START',CYCLE_START);
+  // Clear completion data only
   const rem=[];
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
     if(k&&(k.startsWith('t_c')||k.startsWith('s_c')||k.startsWith('a_c'))) rem.push(k);
   }
   rem.forEach(k=>localStorage.removeItem(k));
-  setWeek(0);
+  CW=0; ss('CW',0);
+  document.querySelectorAll('.week-btn').forEach((b,j)=>b.classList.toggle('active',j===0));
+  document.getElementById('deloadBanner').style.display='none';
   closeModal();
+  // Default to day 0 (Monday) of new cycle
+  CD=0;
+  updateCycleDisplay();
   buildNav();
   renderTimeline();
-  updateCycleDisplay();
 }
 
 function updateCycleDisplay(){
@@ -930,12 +1056,16 @@ function init(){
     const el=document.getElementById('rm-'+id);
     if(sv&&el) el.value=sv;
   });
-  const sw=gs('CW',0);
-  CW=sw;
+  CW=gs('CW',0);
   CYCLE_NUM=gs('CYCLE_NUM',0);
+  initCycleStart();
   document.querySelectorAll('.week-btn').forEach((b,j)=>b.classList.toggle('active',j===CW));
   if(CW===3) document.getElementById('deloadBanner').style.display='block';
-  CD=(new Date().getDay()+6)%7;
+  // Default to today's position within the cycle if possible, else day 0
+  const todayDk=dateStr(new Date());
+  const wd=wdForDate(todayDk);
+  if(wd&&wd.wi===CW){ CD=wd.di; }
+  else { CD=0; }
   updateCycleDisplay();
   buildNav();
   renderTimeline();
