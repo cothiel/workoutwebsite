@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Wellness Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0e0f11;
+  --surface: #16181c;
+  --surface2: #1e2028;
+  --surface3: #252830;
+  --text: #e8e6e1;
+  --text-2: #9a9890;
+  --text-3: #55534e;
+  --border: rgba(232,230,225,0.08);
+  --border-2: rgba(232,230,225,0.04);
+  --green: #3a7d52;
+  --green-dim: rgba(58,125,82,0.15);
+  --green-text: #6dbf8a;
+  --amber: #c08840;
+  --amber-dim: rgba(192,136,64,0.15);
+  --amber-text: #e5b06a;
+  --blue: #3a6ea8;
+  --blue-dim: rgba(58,110,168,0.15);
+  --blue-text: #7aabdc;
+  --purple: #6a4fa8;
+  --purple-dim: rgba(106,79,168,0.15);
+  --purple-text: #a98de0;
+  --done-bg: rgba(58,125,82,0.08);
+  --done-border: rgba(58,125,82,0.3);
+  --r: 8px; --r-lg: 12px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+.shell { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar { width: 230px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 1.75rem 0 1rem; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+.sidebar-logo { padding: 0 1.25rem 1.4rem; border-bottom: 1px solid var(--border-2); margin-bottom: 1.25rem; }
+.sidebar-logo h1 { font-family: 'DM Serif Display', serif; font-size: 1.15rem; font-weight: 400; color: var(--text); line-height: 1.25; }
+.sidebar-logo h1 em { font-style: italic; color: var(--green-text); }
+.sidebar-logo p { font-size: 0.58rem; color: var(--text-3); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px; }
+.sidebar-sec { padding: 0 0.75rem; margin-bottom: 1.25rem; }
+.sidebar-sec-label { font-size: 0.57rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-3); padding: 0 0.5rem; margin-bottom: 5px; }
+.day-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border-radius: var(--r); border: none; background: transparent; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text-2); text-align: left; transition: background 0.15s, color 0.15s; }
+.day-btn:hover { background: var(--surface2); color: var(--text); }
+.day-btn.active { background: var(--surface3); color: var(--text); }
+.day-btn .day-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; transition: opacity 0.2s; }
+.day-btn .day-type-tag { margin-left: auto; font-size: 0.55rem; opacity: 0.45; }
+.day-btn .day-check { margin-left: 4px; font-size: 0.6rem; color: var(--green-text); display: none; }
+.day-btn.day-done .day-check { display: inline; }
+.day-btn.day-done .day-dot { opacity: 0.35; }
+.sidebar-bottom { margin-top: auto; padding: 1rem 1.25rem 0; border-top: 1px solid var(--border-2); display: flex; flex-direction: column; gap: 10px; }
+.sidebar-bottom-label { font-size: 0.57rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; }
+.week-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.week-btn { padding: 4px 8px; border-radius: var(--r); border: 1px solid var(--border); background: transparent; font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text-2); cursor: pointer; transition: all 0.15s; }
+.week-btn:hover { background: var(--surface2); color: var(--text); }
+.week-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.week-btn.deload.active { background: var(--amber); color: #000; border-color: var(--amber); }
+.reset-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border-radius: var(--r); border: 1px solid rgba(192,136,64,0.25); background: var(--amber-dim); font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--amber-text); cursor: pointer; transition: all 0.15s; }
+.reset-btn:hover { background: rgba(192,136,64,0.22); border-color: rgba(192,136,64,0.45); }
+.cycle-tracker { background: var(--surface2); border-radius: var(--r); padding: 8px 10px; border: 1px solid var(--border); }
+.cycle-tracker-label { font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); margin-bottom: 3px; }
+.cycle-tracker-val { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--green-text); line-height: 1; }
+.cycle-tracker-unit { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text-3); }
+
+/* Main */
+.main { flex: 1; padding: 2rem 2.5rem; max-width: 920px; }
+.view-toggle { display: flex; gap: 6px; margin-bottom: 1.75rem; }
+.view-btn { padding: 5px 14px; border-radius: var(--r); border: 1px solid var(--border); background: transparent; font-family: 'DM Mono', monospace; font-size: 0.63rem; color: var(--text-2); cursor: pointer; transition: all 0.15s; }
+.view-btn:hover { background: var(--surface2); color: var(--text); }
+.view-btn.active { background: var(--surface3); color: var(--text); border-color: rgba(232,230,225,0.12); }
+
+/* Day header */
+.day-header { margin-bottom: 1.5rem; animation: fadeIn 0.25s ease; }
+.day-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.day-name { font-family: 'DM Serif Display', serif; font-size: 2.5rem; font-weight: 400; line-height: 1; color: var(--text); }
+.day-type-badge { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 10px; border-radius: 99px; font-family: 'DM Mono', monospace; }
+.badge-gym-lower { background: var(--green-dim); color: var(--green-text); }
+.badge-gym-upper { background: var(--blue-dim); color: var(--blue-text); }
+.badge-cardio { background: var(--amber-dim); color: var(--amber-text); }
+.badge-rest { background: var(--surface2); color: var(--text-3); }
+.day-prog-bar { height: 3px; background: var(--surface3); border-radius: 99px; margin-bottom: 6px; overflow: hidden; }
+.day-prog-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width 0.4s ease; }
+.day-prog-label { font-size: 0.6rem; color: var(--text-3); margin-bottom: 10px; }
+.sum-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+.sum-pill { font-size: 0.6rem; padding: 2px 9px; border-radius: 99px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-2); }
+
+.deload-banner { background: var(--amber-dim); border: 1px solid rgba(192,136,64,0.18); border-radius: var(--r); padding: 8px 14px; font-size: 0.68rem; color: var(--amber-text); margin-bottom: 1.4rem; display: none; }
+
+/* TM panel */
+.tm-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 1.1rem 1.4rem; margin-bottom: 1.4rem; }
+.tm-panel-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 6px; }
+.tm-panel-title { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); }
+.tm-panel-note { font-size: 0.58rem; color: var(--text-3); }
+.tm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.tm-item { background: var(--surface2); border-radius: var(--r); padding: 9px 12px; }
+.tm-lift-name { font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.tm-input-row { display: flex; align-items: center; gap: 6px; }
+.tm-input-row input { width: 66px; padding: 4px 7px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface3); font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; color: var(--text); outline: none; transition: border-color 0.15s; }
+.tm-input-row input:focus { border-color: var(--text-2); }
+.tm-input-row .unit { font-size: 0.6rem; color: var(--text-3); }
+.tm-computed { font-size: 0.58rem; color: var(--text-3); margin-top: 4px; }
+.tm-computed span { color: var(--text-2); font-weight: 500; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; }
+.tl-block { display: flex; }
+.tl-time-col { width: 80px; flex-shrink: 0; padding: 16px 12px 0 0; text-align: right; }
+.tl-time-label { font-size: 0.58rem; color: var(--text-3); white-space: nowrap; }
+.tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 20px; }
+.tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 18px; border: 2px solid var(--bg); }
+.tl-line { width: 1px; flex: 1; min-height: 14px; background: var(--border); }
+.tl-block:last-child .tl-line { opacity: 0; }
+
+/* Task card */
+.tl-card { flex: 1; margin: 7px 0 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; transition: border-color 0.2s; }
+.tl-card:hover { border-color: rgba(232,230,225,0.12); }
+.tl-card.task-done { background: var(--done-bg); border-color: var(--done-border); }
+.tl-card-hdr { padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.task-chk { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--text-3); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 0.6rem; color: transparent; }
+.task-chk:hover { border-color: var(--green-text); }
+.tl-card.task-done .task-chk { background: var(--green); border-color: var(--green); color: #fff; }
+.tl-card-hdr-left { flex: 1; min-width: 0; }
+.tl-card-title { font-size: 0.8rem; font-weight: 500; color: var(--text); }
+.tl-card.task-done .tl-card-title { color: var(--text-2); }
+.tl-card-sub { font-size: 0.6rem; color: var(--text-3); margin-top: 1px; }
+.tl-chevron { font-size: 0.62rem; color: var(--text-3); transition: transform 0.2s; flex-shrink: 0; }
+.tl-card.expanded .tl-chevron { transform: rotate(180deg); }
+.tl-card-body { display: none; border-top: 1px solid var(--border-2); }
+.tl-card.expanded .tl-card-body { display: block; }
+
+/* Workout sections */
+.ws { padding: 10px 14px; border-bottom: 1px solid var(--border-2); }
+.ws:last-child { border-bottom: none; }
+.ws-lbl { font-size: 0.56rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+.ws-sub { font-size: 0.58rem; color: var(--text-3); font-style: italic; margin-bottom: 6px; }
+.mob-item { font-size: 0.68rem; color: var(--text-2); padding: 2px 0; display: flex; align-items: baseline; gap: 6px; }
+.mob-item::before { content: '—'; color: var(--text-3); flex-shrink: 0; }
+
+/* Set rows */
+.set-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border-2); gap: 8px; }
+.set-row:last-child { border-bottom: none; }
+.set-chk { width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid var(--text-3); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.52rem; color: transparent; transition: all 0.18s; }
+.set-chk:hover { border-color: var(--green-text); }
+.set-chk.checked { background: var(--green); border-color: var(--green); color: #fff; }
+.set-name { font-size: 0.7rem; font-weight: 500; color: var(--text); flex: 1; }
+.set-name.fsl { font-weight: 400; color: var(--text-2); }
+.set-right { display: flex; align-items: baseline; gap: 6px; }
+.set-reps { font-size: 0.68rem; color: var(--text-2); }
+.set-reps.amrap { color: var(--blue-text); font-weight: 500; }
+.set-lbs { font-size: 0.65rem; color: var(--text-3); min-width: 56px; text-align: right; }
+.set-pct { font-size: 0.58rem; color: var(--text-3); min-width: 28px; text-align: right; }
+
+/* Accessory blocks */
+.acc-block { padding: 8px 0; border-bottom: 1px solid var(--border-2); }
+.acc-block:last-child { border-bottom: none; }
+.acc-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.acc-name { font-size: 0.7rem; color: var(--text); flex: 1; }
+.acc-tag { font-size: 0.58rem; color: var(--text-3); white-space: nowrap; }
+.acc-inputs-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.acc-input-group { display: flex; flex-direction: column; gap: 3px; }
+.acc-input-lbl { font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+.acc-input-wrap { display: flex; align-items: center; gap: 4px; }
+.acc-input { width: 58px; padding: 4px 7px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface3); font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text); outline: none; transition: border-color 0.15s; }
+.acc-input:focus { border-color: var(--text-2); }
+.acc-input-unit { font-size: 0.6rem; color: var(--text-3); }
+.acc-chks-wrap { display: flex; flex-direction: column; gap: 3px; }
+.acc-chks { display: flex; gap: 5px; }
+.acc-chk { width: 26px; height: 26px; border-radius: var(--r); border: 1px solid var(--border); background: var(--surface2); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.58rem; color: var(--text-3); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.acc-chk:hover { border-color: var(--green-text); color: var(--green-text); }
+.acc-chk.checked { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* Simple sections */
+.ss { padding: 10px 14px; border-bottom: 1px solid var(--border-2); }
+.ss:last-child { border-bottom: none; }
+.ss-lbl { font-size: 0.56rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+.str-item { font-size: 0.68rem; color: var(--text-2); padding: 2px 0; display: flex; align-items: baseline; gap: 6px; }
+.str-item::before { content: '·'; color: var(--text-3); }
+.str-time { margin-left: auto; font-size: 0.58rem; color: var(--text-3); flex-shrink: 0; }
+
+/* Calendar */
+.cal-view { animation: fadeIn 0.25s ease; }
+.cal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; }
+.cal-title { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: var(--text); }
+.cal-nav { display: flex; gap: 6px; }
+.cal-nav-btn { padding: 5px 12px; border-radius: var(--r); border: 1px solid var(--border); background: transparent; font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--text-2); cursor: pointer; transition: all 0.15s; }
+.cal-nav-btn:hover { background: var(--surface2); color: var(--text); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-day-lbl { font-size: 0.58rem; color: var(--text-3); text-align: center; padding: 4px 0; letter-spacing: 0.08em; }
+.cal-cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 6px; min-height: 66px; cursor: pointer; transition: border-color 0.15s; position: relative; overflow: hidden; }
+.cal-cell:hover { border-color: rgba(232,230,225,0.14); }
+.cal-cell.other-month { opacity: 0.25; pointer-events: none; }
+.cal-cell.today { border-color: rgba(58,125,82,0.5); }
+.cal-cell.has-data { background: var(--surface2); }
+.cal-date { font-size: 0.65rem; font-weight: 500; color: var(--text-2); margin-bottom: 4px; }
+.cal-cell.today .cal-date { color: var(--green-text); }
+.cal-dots { display: flex; flex-wrap: wrap; gap: 3px; }
+.cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+.cal-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--green); opacity: 0; transition: opacity 0.3s; }
+.cal-cell.day-complete { border-color: var(--done-border); }
+.cal-cell.day-complete .cal-bar { opacity: 1; }
+.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 1rem; }
+.cal-leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.6rem; color: var(--text-3); }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 14px; }
+.stat-lbl { font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; }
+.stat-val { font-size: 1.3rem; font-weight: 500; color: var(--text); font-family: 'DM Serif Display', serif; }
+.stat-sub { font-size: 0.58rem; color: var(--text-3); margin-top: 2px; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 1.5rem; max-width: 360px; width: 90%; transform: translateY(10px); transition: transform 0.2s; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal h3 { font-family: 'DM Serif Display', serif; font-size: 1.25rem; color: var(--text); margin-bottom: 8px; }
+.modal p { font-size: 0.7rem; color: var(--text-2); line-height: 1.65; margin-bottom: 1rem; }
+.modal-check-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1.25rem; cursor: pointer; }
+.modal-check-row input[type="checkbox"] { margin-top: 2px; accent-color: var(--green); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+.modal-check-label { font-size: 0.7rem; color: var(--text-2); line-height: 1.5; }
+.modal-check-sub { font-size: 0.62rem; color: var(--text-3); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btn { padding: 6px 14px; border-radius: var(--r); border: 1px solid var(--border); background: transparent; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text-2); cursor: pointer; transition: all 0.15s; }
+.modal-btn:hover { background: var(--surface2); color: var(--text); }
+.modal-btn.danger { background: var(--amber-dim); border-color: rgba(192,136,64,0.35); color: var(--amber-text); }
+.modal-btn.danger:hover { background: rgba(192,136,64,0.28); }
+
+.page-footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 0.58rem; color: var(--text-3); letter-spacing: 0.05em; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Auth */
+#authScreen { display:none; position:fixed; inset:0; background:var(--bg); z-index:999; align-items:center; justify-content:center; }
+#authScreen.visible { display:flex; }
+.auth-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:2.5rem 2rem; max-width:360px; width:90%; text-align:center; animation:fadeIn 0.3s ease; }
+.auth-logo { font-family:'DM Serif Display',serif; font-size:1.6rem; font-weight:400; color:var(--text); margin-bottom:4px; }
+.auth-logo em { font-style:italic; color:var(--green-text); }
+.auth-tagline { font-size:0.6rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-3); margin-bottom:2rem; }
+.auth-google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:10px 16px; border-radius:var(--r); border:1px solid var(--border); background:var(--surface2); font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--text); cursor:pointer; transition:all 0.15s; }
+.auth-google-btn:hover { background:var(--surface3); border-color:rgba(232,230,225,0.14); }
+.auth-google-btn svg { flex-shrink:0; }
+.auth-msg { font-size:0.65rem; color:var(--text-3); margin-top:1.25rem; min-height:1.2em; }
+.auth-msg.error { color:#e07070; }
+.auth-msg.success { color:var(--green-text); }
+.auth-spinner { display:inline-block; width:12px; height:12px; border:1.5px solid var(--text-3); border-top-color:var(--green-text); border-radius:50%; animation:spin 0.7s linear infinite; margin-right:6px; vertical-align:middle; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Sign-out button in sidebar */
+.signout-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; border-radius:var(--r); border:1px solid var(--border); background:transparent; font-family:'DM Mono',monospace; font-size:0.6rem; color:var(--text-3); cursor:pointer; transition:all 0.15s; width:100%; }
+.signout-btn:hover { background:var(--surface2); color:var(--text); border-color:rgba(232,230,225,0.1); }
+.signout-user { font-size:0.56rem; color:var(--text-3); text-align:center; word-break:break-all; margin-bottom:5px; opacity:0.7; }
+
+@media (max-width: 700px) {
+  .sidebar { width: 100%; height: auto; position: static; padding: 1rem; border-right: none; border-bottom: 1px solid var(--border); flex-direction: column; }
+  .sidebar-bottom { margin-top: 1rem; padding-top: 1rem; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+  .shell { flex-direction: column; }
+  .main { padding: 1.25rem 1rem; }
+  .day-name { font-size: 2rem; }
+  .tl-time-col { width: 54px; }
+}
+</style>
+</head>
+<body>
+<!-- Auth screen — shown when logged out -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">Wellness<br><em>Plan</em></div>
+    <div class="auth-tagline">Daily schedule</div>
+    <button class="auth-google-btn" id="googleBtn" onclick="signInWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Wellness<br><em>Plan</em></h1>
+      <p>Daily schedule</p>
+    </div>
+    <div class="sidebar-sec">
+      <div class="sidebar-sec-label">This week</div>
+      <div id="dayNav"></div>
+    </div>
+    <div class="sidebar-bottom">
+      <div>
+        <div class="sidebar-bottom-label">Training cycle</div>
+        <div class="week-btns">
+          <button class="week-btn active" onclick="setWeek(0)">Wk 1</button>
+          <button class="week-btn" onclick="setWeek(1)">Wk 2</button>
+          <button class="week-btn" onclick="setWeek(2)">Wk 3</button>
+          <button class="week-btn deload" onclick="setWeek(3)">Deload</button>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="confirmReset()">↺ Reset cycle</button>
+      <div class="cycle-tracker">
+        <div class="cycle-tracker-label">Cycles completed</div>
+        <div class="cycle-tracker-val"><span id="cycleDisplay">0</span><span class="cycle-tracker-unit"> cycles</span></div>
+      </div>
+      <div>
+        <div class="signout-user" id="userEmail"></div>
+        <button class="signout-btn" onclick="signOut()">→ Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="view-toggle">
+      <button class="view-btn active" id="vbtn-day" onclick="setView('day')">Today</button>
+      <button class="view-btn" id="vbtn-cal" onclick="setView('calendar')">Calendar</button>
+    </div>
+
+    <div id="view-day">
+      <div id="deloadBanner" class="deload-banner">Deload week — reduced intensity. Focus on movement quality. Skip or halve accessories.</div>
+      <div id="dayHeader" class="day-header"></div>
+      <div id="tmPanel" class="tm-panel" style="display:none">
+        <div class="tm-panel-hdr">
+          <span class="tm-panel-title">1-rep maxes</span>
+          <span class="tm-panel-note">Training max = 90% of 1RM · rounds to nearest 5 lb</span>
+        </div>
+        <div class="tm-grid">
+          <div class="tm-item"><div class="tm-lift-name">Squat</div><div class="tm-input-row"><input type="number" id="rm-sq" value="225" min="45" step="5" oninput="onRMChange()"><span class="unit">lb</span></div><div class="tm-computed">TM: <span id="tm-sq">—</span></div></div>
+          <div class="tm-item"><div class="tm-lift-name">Deadlift</div><div class="tm-input-row"><input type="number" id="rm-dl" value="275" min="45" step="5" oninput="onRMChange()"><span class="unit">lb</span></div><div class="tm-computed">TM: <span id="tm-dl">—</span></div></div>
+          <div class="tm-item"><div class="tm-lift-name">Bench press</div><div class="tm-input-row"><input type="number" id="rm-bp" value="185" min="45" step="5" oninput="onRMChange()"><span class="unit">lb</span></div><div class="tm-computed">TM: <span id="tm-bp">—</span></div></div>
+          <div class="tm-item"><div class="tm-lift-name">Overhead press</div><div class="tm-input-row"><input type="number" id="rm-ohp" value="115" min="45" step="5" oninput="onRMChange()"><span class="unit">lb</span></div><div class="tm-computed">TM: <span id="tm-ohp">—</span></div></div>
+        </div>
+      </div>
+      <div id="timeline" class="timeline"></div>
+      <div class="page-footer">5/3/1 · 4-day upper/lower split · After each cycle: +5 lb upper, +10 lb lower lifts</div>
+    </div>
+
+    <div id="view-cal" style="display:none">
+      <div class="stats-row" id="statsRow"></div>
+      <div class="cal-view">
+        <div class="cal-hdr">
+          <span class="cal-title" id="calTitle"></span>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="calPrev()">← prev</button>
+            <button class="cal-nav-btn" onclick="calNext()">next →</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend">
+          <div class="cal-leg-item"><div class="cal-dot" style="background:var(--green)"></div>Gym</div>
+          <div class="cal-leg-item"><div class="cal-dot" style="background:var(--amber)"></div>Cardio</div>
+          <div class="cal-leg-item"><div class="cal-dot" style="background:var(--purple)"></div>Mobility</div>
+          <div class="cal-leg-item"><div class="cal-dot" style="background:var(--blue)"></div>Walk</div>
+          <div class="cal-leg-item"><div style="height:3px;width:18px;background:var(--green);border-radius:2px"></div>Day complete</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <h3>Reset cycle?</h3>
+    <p>This clears all completion data and returns to Week 1. Your 1RM values are kept unless you check the box below. This cannot be undone.</p>
+    <label class="modal-check-row">
+      <input type="checkbox" id="rmIncCheck">
+      <span class="modal-check-label">Increase 1RMs for next cycle<br><span class="modal-check-sub">+5 lb upper lifts (bench, OHP) · +10 lb lower lifts (squat, deadlift)</span></span>
+    </label>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn danger" onclick="doReset()">Reset cycle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Supabase Auth ─────────────────────────────────────────────────────────
+const SUPABASE_URL  = '[your URL]';
+const SUPABASE_ANON = '[your key]';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const authScreen = document.getElementById('authScreen');
+const appShell   = document.querySelector('.shell');
+const authMsg    = document.getElementById('authMsg');
+const userEmailEl = document.getElementById('userEmail');
+
+function showAuth()  { authScreen.classList.add('visible');    appShell.style.display = 'none'; }
+function showApp(user){ authScreen.classList.remove('visible'); appShell.style.display = '';
+  if(user?.email) userEmailEl.textContent = user.email; }
+
+function setAuthMsg(txt, type='') {
+  authMsg.textContent = txt;
+  authMsg.className = 'auth-msg' + (type ? ' '+type : '');
+}
+
+async function signInWithGoogle() {
+  setAuthMsg('Redirecting to Google…');
+  const { error } = await _sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+  if (error) setAuthMsg(error.message, 'error');
+}
+
+async function signOut() {
+  await _sb.auth.signOut();
+  showAuth();
+}
+
+// Check session on load and listen for auth changes
+(async () => {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session?.user) { showApp(session.user); }
+  else               { showAuth(); }
+
+  _sb.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) { showApp(session.user); }
+    else               { showAuth(); }
+  });
+})();
+// ── End Auth ──────────────────────────────────────────────────────────────
+
+const r5 = v => Math.round(v/5)*5;
+const getTM = id => r5(+(document.getElementById('rm-'+id)?.value||0)*0.9);
+const lbs = (id,p) => { const v=r5(getTM(id)*p); return v>0?v+' lb':'—'; };
+const dateStr = d => d.toISOString().slice(0,10);
+const todayStr = () => dateStr(new Date());
+
+const WEEKS = [
+  {lbl:'Wk 1', sets:[{r:'5',p:.65},{r:'5',p:.75},{r:'5+',p:.85,amrap:true}], fsl:{r:'3×5',p:.65}},
+  {lbl:'Wk 2', sets:[{r:'3',p:.70},{r:'3',p:.80},{r:'3+',p:.90,amrap:true}], fsl:{r:'3×5',p:.70}},
+  {lbl:'Wk 3', sets:[{r:'5',p:.75},{r:'3',p:.85},{r:'1+',p:.95,amrap:true}], fsl:{r:'3×5',p:.75}},
+  {lbl:'Deload',sets:[{r:'5',p:.40},{r:'5',p:.50},{r:'5',p:.60}], fsl:null}
+];
+
+const DAYS = [
+  {label:'Monday',type:'gym-lower',dot:'#3a7d52',
+   summary:['Lower — squat','Limber 11 at lunch','Morning stretch','Evening unwind','2× 10 min walks'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Thoracic rotation",d:"45s each side"},{n:"Cat-cow",d:"10 reps"},{n:"Downward dog calf stretch",d:"45s each side"},{n:"Shoulder cross-body stretch",d:"30s each side"}]}]},
+    {time:'Lunch',dc:'#c08840',title:'Limber 11',sub:'~15–20 min · preps hips for squats',type:'mobility',
+     sections:[{lbl:'Sequence',items:[{n:"Foam roll — IT band, hip flexor, adductor"},{n:"SMR — glutes, piriformis"},{n:"Hip flexor stretch, hip circle, groin stretch"},{n:"Leg swings, fire hydrant circles, mountain climbers"}]}]},
+    {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
+    {time:'Afternoon',dc:'#e8e6e1',title:'Gym — Lower (Squat)',sub:'60–75 min',type:'workout',
+     liftKey:'sq',liftName:'Barbell squat',
+     mob:["Hip 90/90 — 2×45s each side","World's greatest stretch — 5/side","Leg swings — 10 forward, 10 lateral"],
+     acc:[{n:"Romanian deadlift",s:"3×8–12",t:"hamstrings / glutes"},{n:"Leg press",s:"3×10–12",t:"quads"},{n:"Standing calf raise",s:"3×12–15",t:"calves"},{n:"Ab wheel / hanging leg raise",s:"3×10–12",t:"core"}]},
+    {time:'Post-dinner',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]},
+  {label:'Tuesday',type:'gym-upper',dot:'#3a6ea8',
+   summary:['Upper — overhead press','Limber 11 after lunch','Morning stretch','Evening unwind','2× 10 min walks'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Doorway chest stretch",d:"60s"},{n:"Overhead tricep stretch",d:"30s each side"},{n:"Neck rolls",d:"5 slow circles each direction"},{n:"Thoracic extension over foam roller",d:"60s"},{n:"Wrist flexor / extensor stretch",d:"30s each side"}]}]},
+    {time:'Post-lunch',dc:'#c08840',title:'Walk + Limber 11',sub:'10 min walk · then ~15 min Limber 11',type:'mobility',
+     sections:[{lbl:'Focus today',items:[{n:"Less critical on upper days"},{n:"Prioritise thoracic and shoulder sections"}]}]},
+    {time:'Afternoon',dc:'#e8e6e1',title:'Gym — Upper (Press)',sub:'60–75 min',type:'workout',
+     liftKey:'ohp',liftName:'Overhead press',
+     mob:["Shoulder CARs — 10 slow circles each arm","Band pull-aparts — 2×15","Thoracic extension over foam roller — 60s"],
+     acc:[{n:"Barbell / dumbbell row",s:"3×8–12",t:"lats / mid-back"},{n:"Cable rear delt fly",s:"3×15",t:"rear delts"},{n:"Incline dumbbell curl",s:"3×10–12",t:"biceps"},{n:"Lateral raise",s:"3×12–15",t:"side delts"}]},
+    {time:'Post-dinner',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]},
+  {label:'Wednesday',type:'cardio',dot:'#c08840',
+   summary:['Rowing — steady state','Limber 11 in the morning','Morning stretch','Evening unwind','2× 10 min walks'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch + Limber 11',sub:'~25–30 min · more time today',type:'stretch',
+     sections:[{lbl:'Morning stretch first · 10–15 min',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Cat-cow",d:"10 reps"},{n:"Thoracic rotation",d:"45s each side"},{n:"Downward dog",d:"60s"},{n:"Shoulder cross-body stretch",d:"30s each side"}]},{lbl:'Then Limber 11 · ~15 min',items:[{n:"Full sequence — no rush today"}]}]},
+    {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min',type:'walk',sections:[]},
+    {time:'Afternoon',dc:'#c08840',title:'Rowing — steady state',sub:'20–30 min on the rowing machine',type:'cardio',
+     sections:[{lbl:'Session notes',items:[{n:"Keep pace conversational — full sentences throughout"},{n:"No intervals for first 4–6 weeks"},{n:"After 2–3 cycles: optionally swap for 8×250m intervals"}]}]},
+    {time:'Post-dinner',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]},
+  {label:'Thursday',type:'gym-lower',dot:'#3a7d52',
+   summary:['Lower — deadlift','Limber 11 mid-morning','Morning stretch','Evening unwind','2× 10 min walks'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Glute bridge with hold",d:"2×10 reps"},{n:"Cat-cow",d:"10 reps"},{n:"Seated piriformis stretch",d:"45s each side"},{n:"Downward dog calf stretch",d:"45s each side"}]}]},
+    {time:'Mid-morning',dc:'#c08840',title:'Limber 11',sub:'~15–20 min · 2–3hrs before lifting is ideal',type:'mobility',
+     sections:[{lbl:'Focus today',items:[{n:"Most important day — hip flexor and posterior chain prep"},{n:"Full sequence — prioritise hip and glute sections"}]}]},
+    {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min',type:'walk',sections:[]},
+    {time:'Afternoon',dc:'#e8e6e1',title:'Gym — Lower (Deadlift)',sub:'60–75 min',type:'workout',
+     liftKey:'dl',liftName:'Deadlift',
+     mob:["Hip flexor kneeling stretch — 45s each side","Glute bridge with pause — 2×10","Ankle circles — 10 each direction"],
+     acc:[{n:"Bulgarian split squat",s:"3×8–10 each side",t:"quads / glutes"},{n:"Nordic curl or leg curl",s:"3×8–10",t:"hamstrings"},{n:"Seated calf raise",s:"3×12–15",t:"calves (soleus)"},{n:"Plank or dead bug",s:"3×30–45s",t:"core"}]},
+    {time:'Post-dinner',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]},
+  {label:'Friday',type:'gym-upper',dot:'#3a6ea8',
+   summary:['Upper — bench press','Limber 11 at lunch','Morning stretch','Evening unwind','2× 10 min walks'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch',sub:'~10–15 min on waking',type:'stretch',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Doorway chest stretch",d:"60s"},{n:"Thread-the-needle",d:"45s each side"},{n:"Shoulder CARs",d:"10 slow circles each arm"},{n:"Neck side stretch",d:"30s each side"},{n:"Thoracic rotation seated",d:"45s each side"}]}]},
+    {time:'Lunch',dc:'#c08840',title:'Limber 11',sub:'~15–20 min · breaks up afternoon sitting',type:'mobility',
+     sections:[{lbl:'Focus today',items:[{n:"Upper body focus — thoracic, shoulder, lat sections"}]}]},
+    {time:'Post-lunch',dc:'#3a7d52',title:'Walk',sub:'10 min',type:'walk',sections:[]},
+    {time:'Afternoon',dc:'#e8e6e1',title:'Gym — Upper (Bench)',sub:'60–75 min',type:'workout',
+     liftKey:'bp',liftName:'Bench press',
+     mob:["Doorway chest stretch — 2×30s","Cat-cow — 10 reps","Wrist circles — 10 each direction"],
+     acc:[{n:"Weighted pull-up or lat pulldown",s:"3×8–12",t:"lats / biceps"},{n:"Face pull",s:"3×15",t:"rear delts / rotator cuff"},{n:"Tricep pushdown",s:"3×10–12",t:"triceps"},{n:"Dumbbell shrug or trap-3 raise",s:"3×12",t:"traps / upper back"}]},
+    {time:'Post-dinner',dc:'#3a7d52',title:'Walk',sub:'10 min · step accumulation',type:'walk',sections:[]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]},
+  {label:'Saturday',type:'cardio',dot:'#c08840',
+   summary:['Jump rope · 15–20 min','Morning stretch + Limber 11','Evening unwind','Optional longer walk'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch + Limber 11',sub:'~25–30 min · weekend pace',type:'stretch',
+     sections:[{lbl:'Morning stretch first · 10–15 min',items:[{n:"Hip flexor kneeling stretch",d:"60s each side"},{n:"Thoracic rotation",d:"45s each side"},{n:"Cat-cow",d:"10 reps"},{n:"Shoulder CARs",d:"10 slow circles"},{n:"Downward dog",d:"60s"}]},{lbl:'Then Limber 11 · ~15 min',items:[{n:"Full sequence"}]}]},
+    {time:'Mid-morning',dc:'#c08840',title:'Jump rope',sub:'15–20 min',type:'cardio',
+     sections:[{lbl:'Session options',items:[{n:"Interval: 30s on / 30s off × 15–20 rounds"},{n:"Continuous: steady pace for 15–20 min"},{n:"Far enough from Friday — no recovery concern"}]}]},
+    {time:'Afternoon',dc:'#3a7d52',title:'Optional longer walk',sub:'Good day for extra steps',type:'walk',sections:[]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]},
+  {label:'Sunday',type:'rest',dot:'#55534e',
+   summary:['Active recovery','Walking 30–60 min','Limber 11 whenever','Morning stretch','Evening unwind'],
+   timeline:[
+    {time:'Morning',dc:'#6a4fa8',title:'Morning stretch + Limber 11',sub:'~25–30 min · most flexible day',type:'stretch',
+     sections:[{lbl:'Morning stretch first · 10–15 min',items:[{n:"Full body — no specific focus today"},{n:"Take your time through each stretch"}]},{lbl:'Then Limber 11 · ~15 min',items:[{n:"Full sequence — slowest pace of the week"},{n:"Good day to spend extra time on tight spots"}]}]},
+    {time:'Anytime',dc:'#3a7d52',title:'Walking',sub:'30–60 min · fully unstructured',type:'walk',
+     sections:[{lbl:'Notes',items:[{n:"Errands, a park, anywhere on your feet"},{n:"Think of this as resetting for the week — not training"},{n:"No pace or step target — just move"}]}]},
+    {time:'Bedtime',dc:'#6a4fa8',title:'Evening Unwind',sub:'~15 min · 9-stretch wind-down',type:'bedtime',
+     sections:[{lbl:'Stretch sequence',items:[{n:"Child's Pose",d:"90s"},{n:"Supine Knee-to-Chest",d:"60s"},{n:"Figure-4 Hip Stretch",d:"60s each side"},{n:"Supine Spinal Twist",d:"60s each side"},{n:"Reclined Butterfly",d:"90s"},{n:"Legs-Up-the-Wall",d:"90s"},{n:"Seated Forward Fold",d:"60s"},{n:"Thread-the-Needle",d:"45s each side"},{n:"Savasana",d:"2 min"}]}]}
+   ]}
+];
+
+// State
+let CW = 0, CD = 0, VIEW = 'day';
+let CAL_Y = new Date().getFullYear(), CAL_M = new Date().getMonth();
+let CYCLE_NUM = 0; // increments on each reset
+
+// Storage
+function gs(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;}}
+function ss(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+// Completion keys scoped to cycle+week so each week has independent state
+const tKey=(dk,di,bi)=>`t_c${CYCLE_NUM}_w${CW}_${dk}_${di}_${bi}`;
+const sKey=(dk,di,bi,si)=>`s_c${CYCLE_NUM}_w${CW}_${dk}_${di}_${bi}_${si}`;
+const aKey=(dk,di,bi,ai,sn)=>`a_c${CYCLE_NUM}_w${CW}_${dk}_${di}_${bi}_${ai}_${sn}`;
+// Permanent calendar history — never cleared, survives resets and week changes
+const calKey=(dk,di)=>`cal_${dk}_${di}`;
+
+function dayIdxForDate(date){
+  const js=date.getDay();
+  return (js+6)%7; // Mon=0...Sun=6
+}
+function dateForDayIdx(di){
+  const today=new Date();
+  const targetJs=(di+1)%7;
+  let diff=targetJs-today.getDay();
+  if(diff>0) diff-=7;
+  const d=new Date(today);
+  d.setDate(today.getDate()+diff);
+  return dateStr(d);
+}
+
+// Write current task state into the permanent calendar store whenever a task is toggled
+function syncCalStore(dk,di){
+  const tl=DAYS[di].timeline;
+  const total=tl.length;
+  let done=0;
+  tl.forEach((_,bi)=>{if(gs(tKey(dk,di,bi),false))done++;});
+  ss(calKey(dk,di),{done,total,type:DAYS[di].type});
+}
+
+function getDayProg(dk,di){
+  const tl=DAYS[di].timeline;
+  let total=tl.length,done=0;
+  tl.forEach((_,bi)=>{if(gs(tKey(dk,di,bi),false))done++;});
+  return {total,done};
+}
+// Calendar always reads from permanent store so it persists across resets and week switches
+function getCalDayProg(dk,di){
+  return gs(calKey(dk,di),{done:0,total:DAYS[di].timeline.length,type:DAYS[di].type});
+}
+function isDayDone(dk,di){const{total,done}=getDayProg(dk,di);return total>0&&done===total;}
+
+// Accessory weight/rep storage keys
+const awKey=(di,bi,ai)=>`aw_${di}_${bi}_${ai}`;  // weight for accessory
+const arKey=(di,bi,ai)=>`ar_${di}_${bi}_${ai}`;  // reps for accessory
+
+function saveAccWeight(di,bi,ai,val){ss(awKey(di,bi,ai),val);}
+function saveAccReps(di,bi,ai,val){ss(arKey(di,bi,ai),val);}
+
+// Render helpers
+function renderWorkout(block,di,bi,dk){
+  const w=WEEKS[CW], isD=CW===3, key=block.liftKey;
+  const mobH=block.mob.map(m=>`<div class="mob-item">${m}</div>`).join('');
+
+  // Main sets (3 working sets)
+  const mainSetsH=w.sets.map((s,si)=>{
+    const ck=gs(sKey(dk,di,bi,si),false);
+    const rc=s.amrap&&!isD?'set-reps amrap':'set-reps';
+    return `<div class="set-row">
+      <div class="set-chk${ck?' checked':''}" onclick="togSet(event,'${dk}',${di},${bi},${si})">${ck?'✓':''}</div>
+      <span class="set-name">${block.liftName}</span>
+      <div class="set-right">
+        <span class="${rc}">${s.r} rep${s.r==='1'?'':'s'}</span>
+        <span class="set-lbs">${lbs(key,s.p)}</span>
+        <span class="set-pct">${Math.round(s.p*100)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // FSL — 3 individual sets of 5 at first-set percentage
+  const fslH=w.fsl?Array.from({length:3},(_,fi)=>{
+    const si=w.sets.length+fi;
+    const ck=gs(sKey(dk,di,bi,si),false);
+    return `<div class="set-row">
+      <div class="set-chk${ck?' checked':''}" onclick="togSet(event,'${dk}',${di},${bi},${si})">${ck?'✓':''}</div>
+      <span class="set-name fsl">First set last ${fi+1}/3</span>
+      <div class="set-right">
+        <span class="set-reps">5 reps</span>
+        <span class="set-lbs">${lbs(key,w.fsl.p)}</span>
+        <span class="set-pct">${Math.round(w.fsl.p*100)}%</span>
+      </div>
+    </div>`;
+  }).join(''):'';
+
+  const accH=isD?`<div class="ws-sub">Skip or reduce to 2×10 at very light weight</div>`:
+    block.acc.map((a,ai)=>{
+      const savedW=gs(awKey(di,bi,ai),'');
+      const savedR=gs(arKey(di,bi,ai),'');
+      const chks=Array.from({length:3},(_,sn)=>{
+        const ck=gs(aKey(dk,di,bi,ai,sn),false);
+        return `<div class="acc-chk${ck?' checked':''}" onclick="togAcc(event,'${dk}',${di},${bi},${ai},${sn})">${ck?'✓':sn+1}</div>`;
+      }).join('');
+      return `<div class="acc-block">
+        <div class="acc-top"><span class="acc-name">${a.n}</span><span class="acc-tag">${a.t}</span></div>
+        <div class="acc-inputs-row">
+          <div class="acc-input-group">
+            <label class="acc-input-lbl">Weight</label>
+            <div class="acc-input-wrap">
+              <input class="acc-input" type="number" min="0" step="5" placeholder="—" value="${savedW}" oninput="saveAccWeight(${di},${bi},${ai},this.value)">
+              <span class="acc-input-unit">lb</span>
+            </div>
+          </div>
+          <div class="acc-input-group">
+            <label class="acc-input-lbl">Reps target</label>
+            <div class="acc-input-wrap">
+              <input class="acc-input" type="text" placeholder="${a.s}" value="${savedR}" oninput="saveAccReps(${di},${bi},${ai},this.value)" style="width:70px">
+            </div>
+          </div>
+          <div class="acc-chks-wrap">
+            <label class="acc-input-lbl">Sets done</label>
+            <div class="acc-chks">${chks}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+  return `<div class="ws"><div class="ws-lbl">Mobility warm-up · 5–8 min</div>${mobH}</div>
+    <div class="ws"><div class="ws-lbl">Main lift · 5/3/1${isD?' — deload':''}</div>${isD?'<div class="ws-sub">Light weight, no AMRAP</div>':''}${mainSetsH}${fslH}</div>
+    <div class="ws"><div class="ws-lbl">Accessories · 3 sets each</div>${isD?'':'<div class="ws-sub">Edit weight and reps, tap numbered boxes to mark sets done</div>'}${accH}</div>`;
+}
+
+function renderSimple(block){
+  if(!block.sections||!block.sections.length) return `<div class="ss"><div style="font-size:0.65rem;color:var(--text-3)">—</div></div>`;
+  return block.sections.map(sec=>`<div class="ss"><div class="ss-lbl">${sec.lbl}</div>${sec.items.map(it=>`<div class="str-item">${it.n}${it.d?`<span class="str-time">${it.d}</span>`:''}</div>`).join('')}</div>`).join('');
+}
+
+function renderTimeline(){
+  const day=DAYS[CD], dk=dateForDayIdx(CD);
+  const isGym=day.type==='gym-lower'||day.type==='gym-upper';
+  document.getElementById('tmPanel').style.display=isGym?'block':'none';
+  updateTMs();
+
+  const BC={'gym-lower':'badge-gym-lower','gym-upper':'badge-gym-upper','cardio':'badge-cardio','rest':'badge-rest'}[day.type]||'badge-rest';
+  const BL={'gym-lower':'strength · lower','gym-upper':'strength · upper','cardio':'cardio','rest':'active recovery'}[day.type]||'rest';
+  const {total,done}=getDayProg(dk,CD);
+  const pct=total>0?Math.round(done/total*100):0;
+
+  document.getElementById('dayHeader').innerHTML=`
+    <div class="day-header-top">
+      <span class="day-name">${day.label}</span>
+      <span class="day-type-badge ${BC}">${BL}</span>
+    </div>
+    <div class="day-prog-bar"><div class="day-prog-fill" style="width:${pct}%"></div></div>
+    <div class="day-prog-label">${done} of ${total} tasks complete${pct===100?' · day complete ✓':''}</div>
+    <div class="sum-pills">${day.summary.map(s=>`<span class="sum-pill">${s}</span>`).join('')}</div>`;
+
+  document.getElementById('timeline').innerHTML=day.timeline.map((block,bi)=>{
+    const isDone=gs(tKey(dk,CD,bi),false);
+    const isWO=block.type==='workout';
+    const bodyH=isWO?renderWorkout(block,CD,bi,dk):renderSimple(block);
+    const exp=(isWO||block.type==='bedtime')?' expanded':'';
+    return `<div class="tl-block">
+      <div class="tl-time-col"><span class="tl-time-label">${block.time}</span></div>
+      <div class="tl-spine"><div class="tl-dot" style="background:${block.dc}"></div><div class="tl-line"></div></div>
+      <div class="tl-card${exp}${isDone?' task-done':''}" id="tlc-${bi}">
+        <div class="tl-card-hdr" onclick="togCard(${bi})">
+          <button class="task-chk" onclick="togTask(event,'${dk}',${CD},${bi})">${isDone?'✓':''}</button>
+          <div class="tl-card-hdr-left">
+            <div class="tl-card-title">${block.title}</div>
+            <div class="tl-card-sub">${block.sub}</div>
+          </div>
+          <span class="tl-chevron">▼</span>
+        </div>
+        <div class="tl-card-body" id="tlb-${bi}">${bodyH}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togCard(bi){document.getElementById('tlc-'+bi).classList.toggle('expanded');}
+
+function togTask(e,dk,di,bi){
+  e.stopPropagation();
+  const k=tKey(dk,di,bi);
+  ss(k,!gs(k,false));
+  syncCalStore(dk,di); // persist to permanent calendar history
+  renderTimeline(); buildNav();
+  if(VIEW==='calendar') renderCal();
+}
+function togSet(e,dk,di,bi,si){
+  e.stopPropagation();
+  const k=sKey(dk,di,bi,si);
+  ss(k,!gs(k,false));
+  document.getElementById('tlb-'+bi).innerHTML=renderWorkout(DAYS[di].timeline[bi],di,bi,dk);
+}
+function togAcc(e,dk,di,bi,ai,sn){
+  e.stopPropagation();
+  const k=aKey(dk,di,bi,ai,sn);
+  ss(k,!gs(k,false));
+  document.getElementById('tlb-'+bi).innerHTML=renderWorkout(DAYS[di].timeline[bi],di,bi,dk);
+}
+
+function updateTMs(){
+  ['sq','dl','bp','ohp'].forEach(id=>{
+    const el=document.getElementById('tm-'+id);
+    if(el) el.textContent=getTM(id)+' lb';
+  });
+}
+function onRMChange(){
+  ['sq','dl','bp','ohp'].forEach(id=>{const el=document.getElementById('rm-'+id);if(el)ss('rm-'+id,el.value);});
+  renderTimeline();
+}
+
+function buildNav(){
+  document.getElementById('dayNav').innerHTML=DAYS.map((d,i)=>{
+    const dk=dateForDayIdx(i);
+    const done=isDayDone(dk,i);
+    const tl={'gym-lower':'lower','gym-upper':'upper','cardio':'cardio','rest':'rest'}[d.type]||'rest';
+    return `<button class="day-btn${i===CD?' active':''}${done?' day-done':''}" onclick="setDay(${i})">
+      <span class="day-dot" style="background:${d.dot}"></span>${d.label}
+      <span class="day-type-tag">${tl}</span>
+      <span class="day-check">✓</span>
+    </button>`;
+  }).join('');
+}
+
+// Calendar
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DLBLS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function renderCal(){
+  document.getElementById('calTitle').textContent=MONTHS[CAL_M]+' '+CAL_Y;
+
+  // Stats — scan last 60 days using permanent cal store
+  let gymD=0,cardioD=0,completeD=0;
+  const now=new Date();
+  for(let back=0;back<60;back++){
+    const d=new Date(now);
+    d.setDate(d.getDate()-back);
+    const dk=dateStr(d);
+    const di=dayIdxForDate(d);
+    const {done,total,type}=getCalDayProg(dk,di);
+    if(total>0&&done===total){
+      completeD++;
+      if(type==='gym-lower'||type==='gym-upper') gymD++;
+      if(type==='cardio') cardioD++;
+    }
+  }
+
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Cycles completed</div><div class="stat-val">${CYCLE_NUM}</div><div class="stat-sub">all time</div></div>
+    <div class="stat-card"><div class="stat-lbl">Days completed</div><div class="stat-val">${completeD}</div><div class="stat-sub">last 60 days</div></div>
+    <div class="stat-card"><div class="stat-lbl">Gym sessions</div><div class="stat-val">${gymD}</div><div class="stat-sub">last 60 days</div></div>
+    <div class="stat-card"><div class="stat-lbl">Cardio sessions</div><div class="stat-val">${cardioD}</div><div class="stat-sub">last 60 days</div></div>`;
+
+  const first=new Date(CAL_Y,CAL_M,1);
+  let startDow=first.getDay()-1; if(startDow<0)startDow=6;
+  const dim=new Date(CAL_Y,CAL_M+1,0).getDate();
+  const dip=new Date(CAL_Y,CAL_M,0).getDate();
+  const today=new Date();
+  const cells=Math.ceil((startDow+dim)/7)*7;
+  let cn=1, html=DLBLS.map(l=>`<div class="cal-day-lbl">${l}</div>`).join('');
+
+  for(let i=0;i<cells;i++){
+    let date,isOther=false;
+    if(i<startDow){date=new Date(CAL_Y,CAL_M-1,dip-startDow+i+1);isOther=true;}
+    else if(cn>dim){date=new Date(CAL_Y,CAL_M+1,cn-dim);isOther=true;cn++;}
+    else{date=new Date(CAL_Y,CAL_M,cn);cn++;}
+
+    const dk=dateStr(date);
+    const isToday=dk===dateStr(today);
+    const di=dayIdxForDate(date);
+    // Use permanent store for calendar display
+    const {done,total,type:dtype}=getCalDayProg(dk,di);
+    const complete=total>0&&done===total;
+    const hasAny=done>0;
+
+    let dotC='';
+    if(hasAny&&!isOther){
+      if(dtype==='gym-lower'||dtype==='gym-upper') dotC='var(--green)';
+      else if(dtype==='cardio') dotC='var(--amber)';
+      else dotC='var(--blue)';
+    }
+    const dotsH=hasAny&&!isOther?`<div class="cal-dots"><div class="cal-dot" style="background:${dotC}"></div>${done>1?`<div class="cal-dot" style="background:var(--purple)"></div>`:''}</div>`:'';
+    const onclick=!isOther?`onclick="jumpToDay(${di})"`:''
+
+    html+=`<div class="cal-cell${isOther?' other-month':''}${isToday?' today':''}${hasAny&&!isOther?' has-data':''}${complete&&!isOther?' day-complete':''}" ${onclick}>
+      <div class="cal-date">${date.getDate()}</div>
+      ${dotsH}
+      ${!isOther?'<div class="cal-bar"></div>':''}
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+function calPrev(){CAL_M--;if(CAL_M<0){CAL_M=11;CAL_Y--;}renderCal();}
+function calNext(){CAL_M++;if(CAL_M>11){CAL_M=0;CAL_Y++;}renderCal();}
+function jumpToDay(di){setView('day');setDay(di);}
+
+function setView(v){
+  VIEW=v;
+  document.getElementById('view-day').style.display=v==='day'?'block':'none';
+  document.getElementById('view-cal').style.display=v==='calendar'?'block':'none';
+  document.getElementById('vbtn-day').classList.toggle('active',v==='day');
+  document.getElementById('vbtn-cal').classList.toggle('active',v==='calendar');
+  if(v==='calendar') renderCal();
+}
+
+function setDay(i){
+  CD=i;
+  buildNav();
+  if(VIEW==='day') renderTimeline();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setWeek(i){
+  CW=i;
+  ss('CW',i);
+  document.querySelectorAll('.week-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  document.getElementById('deloadBanner').style.display=i===3?'block':'none';
+  if(VIEW==='day') renderTimeline();
+}
+
+function confirmReset(){document.getElementById('resetModal').classList.add('open');}
+function closeModal(){document.getElementById('resetModal').classList.remove('open');}
+function doReset(){
+  // Optionally increment 1RMs
+  if(document.getElementById('rmIncCheck').checked){
+    const bumps={sq:10,dl:10,bp:5,ohp:5};
+    ['sq','dl','bp','ohp'].forEach(id=>{
+      const el=document.getElementById('rm-'+id);
+      if(el){
+        const newVal=Math.round((parseFloat(el.value)||0)+bumps[id]);
+        el.value=newVal;
+        ss('rm-'+id,String(newVal));
+      }
+    });
+    document.getElementById('rmIncCheck').checked=false;
+  }
+  // Increment cycle counter and save
+  CYCLE_NUM++;
+  ss('CYCLE_NUM',CYCLE_NUM);
+  // Clear only completion data (t_, s_, a_) — cal_ history is preserved
+  const rem=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&(k.startsWith('t_c')||k.startsWith('s_c')||k.startsWith('a_c'))) rem.push(k);
+  }
+  rem.forEach(k=>localStorage.removeItem(k));
+  setWeek(0);
+  closeModal();
+  buildNav();
+  renderTimeline();
+  updateCycleDisplay();
+}
+
+function updateCycleDisplay(){
+  const el=document.getElementById('cycleDisplay');
+  if(el) el.textContent=CYCLE_NUM;
+}
+
+// Init
+function init(){
+  ['sq','dl','bp','ohp'].forEach(id=>{
+    const sv=gs('rm-'+id,null);
+    const el=document.getElementById('rm-'+id);
+    if(sv&&el) el.value=sv;
+  });
+  const sw=gs('CW',0);
+  CW=sw;
+  CYCLE_NUM=gs('CYCLE_NUM',0);
+  document.querySelectorAll('.week-btn').forEach((b,j)=>b.classList.toggle('active',j===CW));
+  if(CW===3) document.getElementById('deloadBanner').style.display='block';
+  CD=(new Date().getDay()+6)%7;
+  updateCycleDisplay();
+  buildNav();
+  renderTimeline();
+}
+init();
+</script>
+</body>
+</html>
